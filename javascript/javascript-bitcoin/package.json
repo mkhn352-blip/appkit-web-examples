@@ -1,14 +1,21 @@
+
 {
   "name": "vanillajs-bitcoin",
   "private": true,
-  "version": "0.0.1",
+  "version": "0.0.2",
   "scripts": {
     "dev": "vite --port 3011",
     "build": "vite build"
   },
   "dependencies": {
     "@reown/appkit": "1.8.21",
-    "@reown/appkit-adapter-bitcoin": "1.8.21" 
+    "@reown/appkit-adapter-bitcoin": "1.8.21",
+    "@trustwallet/connect-react": "latest",
+    "@trustwallet/connect-bip122-react": "latest",
+    "@trustwallet/connect-walletconnect": "latest",
+    "@tanstack/react-query": "latest",
+    "react": "latest",
+    "react-dom": "latest"
   },
   "devDependencies": {
     "vite": "7.2.7"
