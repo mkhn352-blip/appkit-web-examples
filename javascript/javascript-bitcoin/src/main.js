@@ -1,54 +1,111 @@
-import { appKit } from './config/appKit'
-import { store } from './store/appkitStore'
-import { updateTheme, updateButtonVisibility } from './utils/dom'
-import { signMessage, getBalance } from './services/wallet'
-import { initializeSubscribers } from './utils/suscribers'
 
-// Initialize subscribers
-initializeSubscribers(appKit)
+import { appKit } from './config/appKit';
+import { store } from './store/appkitStore';
+import {
+  updateTheme,
+  updateButtonVisibility
+} from './utils/dom';
+import {
+  signMessage,
+  getBalance
+} from './services/wallet';
+import { initializeSubscribers } from './utils/subscribers';
 
-// Initial check
+const getElement = (id) => document.getElementById(id);
+
+const showError = (message) => {
+  console.error(message);
+  window.alert(message);
+};
+
+initializeSubscribers(appKit);
+
 updateButtonVisibility(appKit.getIsConnectedState());
 
-// Button event listeners
-document.getElementById('open-connect-modal')?.addEventListener(
-  'click', () => appKit.open()
-)
+getElement('open-connect-modal')?.addEventListener(
+  'click',
+  () => appKit.open()
+);
 
-document.getElementById('disconnect')?.addEventListener(
-  'click', () => {
-    appKit.disconnect()
+getElement('disconnect')?.addEventListener(
+  'click',
+  async () => {
+    try {
+      await appKit.disconnect();
+    } catch (error) {
+      showError(error.message || 'قطع اتصال کیف پول ناموفق بود.');
+    }
   }
-)
+);
 
-document.getElementById('sign-message')?.addEventListener(
-  'click', async () => {
-    const signature = await signMessage(store.bip122Provider, store.accountState.address)
+// امضای پیام آزمایشی؛ این کار تراکنش مالی نیست.
+getElement('sign-message')?.addEventListener(
+  'click',
+  async () => {
+    try {
+      const address = store.accountState?.address;
+      const provider = store.bip122Provider;
 
-    document.getElementById('signatureState').innerHTML = signature
-    document.getElementById('signatureSection').style.display = ''
+      if (!address || !provider) {
+        throw new Error('ابتدا کیف پول بیت‌کوین را متصل کن.');
+      }
+
+      const signature = await signMessage(provider, address);
+      const output = getElement('signatureState');
+
+      if (output) {
+        output.textContent =
+          typeof signature === 'string'
+            ? signature
+            : JSON.stringify(signature, null, 2);
+      }
+
+      const section = getElement('signatureSection');
+      if (section) section.style.display = '';
+    } catch (error) {
+      showError(error.message || 'امضای پیام ناموفق بود.');
+    }
   }
-)
+);
 
-document.getElementById('send-tx')?.addEventListener(
-  'click', async () => {
-    console.log(store.bip122Provider, store.accountState.address)
-    const tx = await sendTx(store.bip122Provider, store.accountState.address)
-    console.log('Tx:', tx)
+// دریافت موجودی عمومی بیت‌کوین
+getElement('get-balance')?.addEventListener(
+  'click',
+  async () => {
+    try {
+      const address = store.accountState?.address;
+      const provider = store.bip122Provider;
 
-    document.getElementById('txState').innerHTML = JSON.stringify(tx, null, 2)
-    document.getElementById('txSection').style.display = ''
+      if (!address || !provider) {
+        throw new Error('ابتدا کیف پول بیت‌کوین را متصل کن.');
+      }
+
+      const balance = await getBalance(provider, address);
+      const output = getElement('balanceState');
+
+      if (output) {
+        output.textContent =
+          `${balance.totalBTC.toFixed(8)} BTC ` +
+          `(${balance.totalSats.toLocaleString('en-US')} sats)`;
+      }
+
+      const section = getElement('balanceSection');
+      if (section) section.style.display = '';
+    } catch (error) {
+      showError(error.message || 'دریافت موجودی ناموفق بود.');
+    }
   }
-)
+);
 
-document.getElementById('get-balance')?.addEventListener(
-  'click', async () => {
-    const balance = await getBalance(store.bip122Provider, store.accountState.address)
-    
-    document.getElementById('balanceState').innerHTML = balance + ' ETH'
-    document.getElementById('balanceSection').style.display = ''
+// ارسال واقعی هنوز پیاده‌سازی نشده است؛ از ارسال ساختگی جلوگیری می‌کنیم.
+getElement('send-tx')?.addEventListener(
+  'click',
+  () => {
+    showError(
+      'ارسال تراکنش هنوز آماده نیست. ' +
+      'ابتدا ساخت PSBT، تأیید جزئیات و امضای امن کیف پول باید پیاده‌سازی شود.'
+    );
   }
-)
+);
 
-// Set initial theme
-updateTheme(store.themeState.themeMode)
+updateTheme(store.themeState.themeMode);
